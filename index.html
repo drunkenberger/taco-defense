@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Taco Defense</title>
+  <link rel="stylesheet" href="style.css">
+  <!-- p5.js library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+  <!-- p5.sound library with fallback -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/addons/p5.sound.min.js"></script>
+  <script>
+    // Check if p5.sound loaded correctly
+    window.addEventListener('load', function() {
+      if (typeof p5.SoundFile !== 'function') {
+        console.warn('p5.sound not loaded from primary source, trying alternate source');
+        // Try alternate source
+        var script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/p5@1.4.0/lib/addons/p5.sound.min.js';
+        script.onload = function() {
+          console.log('p5.sound loaded from alternate source');
+          if (typeof window.soundLoadedCallback === 'function') {
+            window.soundLoadedCallback();
+          }
+        };
+        script.onerror = function() {
+          console.error('Failed to load p5.sound from alternate source');
+          alert('Could not load sound library. Some features may not work.');
+        };
+        document.head.appendChild(script);
+      } else {
+        console.log('p5.sound loaded successfully from primary source');
+      }
+    });
+  </script>
+  <!-- Supabase library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <!-- Social Sharing Library -->
+  <script src="https://cdn.jsdelivr.net/npm/share-buttons@1.9.0/dist/share-buttons.min.js"></script>
+</head>
+<body>
+  <div id="game-container">
+    <!-- Game canvas will be created here by p5.js -->
+    <!-- HTML Leaderboard Button -->
+    <button id="html-leaderboard-button">LEADERBOARD</button>
+  </div>
+  
+  <!-- Leaderboard container -->
+  <div id="leaderboard-container" class="game-overlay">
+    <div class="leaderboard-content">
+      <h2>Leaderboard - Top Players</h2>
+      <table id="leaderboard-table">
+        <thead>
+          <tr>
+            <th>Rank</th>
+            <th>Player</th>
+            <th>Score</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody id="leaderboard-body">
+          <!-- Leaderboard entries will be added here -->
+          <tr>
+            <td colspan="4">Loading leaderboard data...</td>
+          </tr>
+        </tbody>
+      </table>
+      <button id="close-leaderboard">Close Leaderboard</button>
+    </div>
+  </div>
+  
+  <!-- Social sharing container -->
+  <div id="share-container">
+    <button class="share-button twitter-share" id="twitter-share">Share on Twitter</button>
+    <button class="share-button facebook-share" id="facebook-share">Share on Facebook</button>
+  </div>
+  
+  <!-- Game scripts -->
+  <script src="supabase-config.js"></script>
+  <script src="sketch.js"></script>
+</body>
+</html>
