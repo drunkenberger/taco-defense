@@ -4,7 +4,7 @@ A retro-style arcade game where you defend against chupacabras with tacos!
 
 ## Play the Game
 
-You can play the game online at: [Taco Defense](https://yourusername.github.io/taco-defense/)
+You can play the game online at: [Taco Defense](https://drunkenberger.github.io/taco-defense/)
 
 ## Game Description
 
