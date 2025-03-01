@@ -6,6 +6,11 @@ let chupacabras = [];         // Array to hold chupacabras (formerly zombies)
 let tacos = [];               // Array to hold thrown tacos
 let lastTacoTime = 0;         // Timestamp of the last taco throw
 let tacoCooldown = 500;       // Cooldown between taco throws (ms)
+let regularTacoCooldown = 150; // Shorter cooldown for regular tacos (ms)
+let heldRegularTacoCooldown = 300; // Slower cooldown when space is held down (ms)
+let lastRegularTacoTime = 0;  // Separate timestamp for regular tacos
+let spaceBarWasPressed = false; // Track if space bar was already pressed
+let spaceBarHoldStartTime = 0; // Track when space bar was first held down
 let chupacabraSpawnInterval = 2000; // Initial chupacabra spawn interval (ms)
 let lastChupacabraSpawnTime = 0;  // Timestamp of the last chupacabra spawn
 let spicyTacoCount = 5;       // Limited ammo for spicy tacos
@@ -814,19 +819,57 @@ function drawGame() {
   chef.x = constrain(chef.x, chef.size / 2, width - chef.size / 2);
 
   // Handle taco throwing with mouse or space bar
-  if ((mouseIsPressed || keyIsDown(32)) && millis() - lastTacoTime > tacoCooldown) {
-    if (currentTacoType === 'spicy' && spicyTacoCount > 0) {
+  if (mouseIsPressed) {
+    // Mouse press always uses the standard cooldown
+    if (currentTacoType === 'spicy' && spicyTacoCount > 0 && millis() - lastTacoTime > tacoCooldown) {
       tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'spicy'));
       spicyTacoCount--;
       lastTacoTime = millis();
-    } else if (currentTacoType === 'super' && millis() - lastSuperTacoTime > superTacoCooldown) {
+    } else if (currentTacoType === 'super' && millis() - lastSuperTacoTime > superTacoCooldown && millis() - lastTacoTime > tacoCooldown) {
       tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'super'));
       lastSuperTacoTime = millis();
       lastTacoTime = millis();
-    } else if (currentTacoType === 'regular') {
+    } else if (currentTacoType === 'regular' && millis() - lastRegularTacoTime > regularTacoCooldown) {
       tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'regular'));
-      lastTacoTime = millis();
+      lastRegularTacoTime = millis();
     }
+  } else if (keyIsDown(32)) { // Space bar is being held down
+    // If space bar wasn't pressed before, this is a new press
+    if (!spaceBarWasPressed) {
+      spaceBarWasPressed = true;
+      spaceBarHoldStartTime = millis();
+      
+      // For a new press, immediately fire regardless of cooldown (for responsiveness)
+      if (currentTacoType === 'spicy' && spicyTacoCount > 0) {
+        tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'spicy'));
+        spicyTacoCount--;
+        lastTacoTime = millis();
+      } else if (currentTacoType === 'super' && millis() - lastSuperTacoTime > superTacoCooldown) {
+        tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'super'));
+        lastSuperTacoTime = millis();
+        lastTacoTime = millis();
+      } else if (currentTacoType === 'regular') {
+        tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'regular'));
+        lastRegularTacoTime = millis();
+      }
+    } else {
+      // Space bar is being held down, use slower cooldown for regular tacos
+      if (currentTacoType === 'spicy' && spicyTacoCount > 0 && millis() - lastTacoTime > tacoCooldown) {
+        tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'spicy'));
+        spicyTacoCount--;
+        lastTacoTime = millis();
+      } else if (currentTacoType === 'super' && millis() - lastSuperTacoTime > superTacoCooldown && millis() - lastTacoTime > tacoCooldown) {
+        tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'super'));
+        lastSuperTacoTime = millis();
+        lastTacoTime = millis();
+      } else if (currentTacoType === 'regular' && millis() - lastRegularTacoTime > heldRegularTacoCooldown) {
+        tacos.push(new RetroTaco(chef.x, chef.y - chef.size/2, 'regular'));
+        lastRegularTacoTime = millis();
+      }
+    }
+  } else {
+    // Space bar is not pressed, reset the flag
+    spaceBarWasPressed = false;
   }
 
   // Draw the chef sprite
@@ -1338,16 +1381,19 @@ function keyPressed() {
   // Handle game controls
   if (gameState === 'playing') {
     if (keyCode === 32) { // Space bar
-      // Throw a taco
-      tacos.push(new RetroTaco(chef.x, chef.y - 20, currentTacoType));
-      
-      // Play appropriate sound based on taco type
-      if (soundLibraryAvailable && soundEnabled) {
-        if (currentTacoType === 'spicy') {
+      // We'll handle the actual taco throwing in the draw loop
+      // This ensures we don't fire multiple tacos on a single press
+      // Just play the sound here if needed
+      if (currentTacoType === 'spicy' && spicyTacoCount > 0) {
+        if (soundLibraryAvailable && soundEnabled && soundSpicyTacoThrow) {
           playSound(soundSpicyTacoThrow);
-        } else if (currentTacoType === 'super') {
+        }
+      } else if (currentTacoType === 'super' && millis() - lastSuperTacoTime > superTacoCooldown) {
+        if (soundLibraryAvailable && soundEnabled && soundSuperTacoThrow) {
           playSound(soundSuperTacoThrow);
-        } else {
+        }
+      } else if (currentTacoType === 'regular') {
+        if (soundLibraryAvailable && soundEnabled && soundTacoThrow) {
           playSound(soundTacoThrow);
         }
       }
@@ -1544,11 +1590,14 @@ function resetGame() {
   powerups = [];
   fedEffects = [];
   lastTacoTime = 0;
+  lastRegularTacoTime = 0;
   lastChupacabraSpawnTime = 0;
   lastPowerupTime = 0;
   spicyTacoCount = 3;
   lastSuperTacoTime = 0;
   currentTacoType = 'regular';
+  spaceBarWasPressed = false;
+  spaceBarHoldStartTime = 0;
   lives = 3;
   wave = 1;
   chupacabraSpeed = 1;
